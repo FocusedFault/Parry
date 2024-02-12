@@ -7,6 +7,7 @@ using EntityStates;
 using System;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.Networking;
 
 namespace Parry
 {
@@ -18,8 +19,11 @@ namespace Parry
     private Sprite parryIcon;
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
     public static GameObject parryImpact = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/ImpactMercFocusedAssault.prefab").WaitForCompletion();
-    private SkillDef parrySkillDef = ScriptableObject.CreateInstance<SkillDef>();
-    private SkillDef uppercutSkillDef = Addressables.LoadAssetAsync<SkillDef>("RoR2/Base/Merc/MercBodyUppercut.asset").WaitForCompletion();
+
+    public static SkillDef parrySkillDef = ScriptableObject.CreateInstance<SkillDef>();
+
+    private static BodyIndex mercBodyIndex;
+
 
     public void Awake()
     {
@@ -29,11 +33,21 @@ namespace Parry
       ContentAddition.AddEntityState<FocusedStrike>(out _);
       CreateParrySkill();
       On.RoR2.HealthComponent.TakeDamage += AddParryDelay;
+
+      RoR2Application.onLoad += OnLoad;
+    }
+
+    private void OnLoad()
+    {
+      mercBodyIndex = BodyCatalog.FindBodyIndex("MercBody");
     }
 
     public void AddParryDelay(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
     {
-      if (self.body.name == "MercBody(Clone)" && self.body.inputBank.skill2.down && self.body.GetComponent<EntityStateMachine>().state.GetType() == typeof(FocusedStrike))
+      if (NetworkServer.active
+        && self.body.bodyIndex == mercBodyIndex
+        && self.body.inputBank.skill2.down  //Checking for inputs won't work online.
+        && self.body.GetComponent<EntityStateMachine>().state.GetType() == typeof(FocusedStrike))
       {
         EffectManager.SimpleImpactEffect(HealthComponent.AssetReferences.executeEffectPrefab, damageInfo.position, -damageInfo.force, true);
         StartCoroutine(ParryDelay(orig, self, damageInfo));
@@ -71,8 +85,8 @@ namespace Parry
       parrySkillDef.icon = parryIcon;
 
       parrySkillDef.activationState = new SerializableEntityStateType(typeof(FocusedStrike));
-      parrySkillDef.activationStateMachineName = uppercutSkillDef.activationStateMachineName;
-      parrySkillDef.interruptPriority = uppercutSkillDef.interruptPriority;
+      parrySkillDef.activationStateMachineName = "Body";
+      parrySkillDef.interruptPriority = InterruptPriority.PrioritySkill;
 
       parrySkillDef.baseMaxStock = 1;
       parrySkillDef.baseRechargeInterval = 5f;
@@ -81,15 +95,15 @@ namespace Parry
       parrySkillDef.requiredStock = 1;
       parrySkillDef.stockToConsume = 1;
 
-      parrySkillDef.dontAllowPastMaxStocks = uppercutSkillDef.dontAllowPastMaxStocks;
-      parrySkillDef.beginSkillCooldownOnSkillEnd = uppercutSkillDef.beginSkillCooldownOnSkillEnd;
-      parrySkillDef.canceledFromSprinting = uppercutSkillDef.canceledFromSprinting;
-      parrySkillDef.forceSprintDuringState = uppercutSkillDef.forceSprintDuringState;
-      parrySkillDef.fullRestockOnAssign = uppercutSkillDef.fullRestockOnAssign;
-      parrySkillDef.resetCooldownTimerOnUse = uppercutSkillDef.resetCooldownTimerOnUse;
-      parrySkillDef.isCombatSkill = uppercutSkillDef.isCombatSkill;
-      parrySkillDef.mustKeyPress = uppercutSkillDef.mustKeyPress;
-      parrySkillDef.cancelSprintingOnActivation = uppercutSkillDef.cancelSprintingOnActivation;
+      parrySkillDef.dontAllowPastMaxStocks = false;
+      parrySkillDef.beginSkillCooldownOnSkillEnd = false;
+      parrySkillDef.canceledFromSprinting = false;
+      parrySkillDef.forceSprintDuringState = false;
+      parrySkillDef.fullRestockOnAssign = true;
+      parrySkillDef.resetCooldownTimerOnUse = false;
+      parrySkillDef.isCombatSkill = true;
+      parrySkillDef.mustKeyPress = false;
+      parrySkillDef.cancelSprintingOnActivation = true;
 
       ContentAddition.AddSkillDef(parrySkillDef);
 
