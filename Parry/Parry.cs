@@ -17,6 +17,10 @@ namespace Parry
   {
     private AssetBundle parryAssets;
     private Sprite parryIcon;
+    private Sprite parryBuffIcon;
+    private Sprite parryActivatedBuffIcon;
+    public static BuffDef parryBuffDef;
+    public static BuffDef parryActivatedBuffDef;
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
     public static GameObject parryImpact = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/ImpactMercFocusedAssault.prefab").WaitForCompletion();
 
@@ -27,10 +31,13 @@ namespace Parry
 
     public void Awake()
     {
-
       parryAssets = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(this.Info.Location), "parrybundle.bundle"));
       parryIcon = parryAssets.LoadAsset<Sprite>("Assets/parryIconNux.png");
-      ContentAddition.AddEntityState<FocusedStrike>(out _);
+      parryBuffIcon = parryAssets.LoadAsset<Sprite>("Assets/parryBuffIconNux.png");
+      parryActivatedBuffIcon = parryAssets.LoadAsset<Sprite>("Assets/parryActivatedBuffIconNux.png");
+      ContentAddition.AddEntityState<ParryHold>(out _);
+      ContentAddition.AddEntityState<ParryStrike>(out _);
+      CreateParryBuffs();
       CreateParrySkill();
       On.RoR2.HealthComponent.TakeDamage += AddParryDelay;
 
@@ -46,8 +53,7 @@ namespace Parry
     {
       if (NetworkServer.active
         && self.body.bodyIndex == mercBodyIndex
-        && self.body.inputBank.skill2.down  //Checking for inputs won't work online.
-        && self.body.GetComponent<EntityStateMachine>().state.GetType() == typeof(FocusedStrike))
+        && self.body.HasBuff(parryBuffDef))
       {
         EffectManager.SimpleImpactEffect(HealthComponent.AssetReferences.executeEffectPrefab, damageInfo.position, -damageInfo.force, true);
         StartCoroutine(ParryDelay(orig, self, damageInfo));
@@ -61,11 +67,11 @@ namespace Parry
       float elapsedTime = 0f;
       while (elapsedTime < 0.75f)
       {
-        if (self.body.inputBank.skill2.justReleased)
+        if (self.body.HasBuff(parryActivatedBuffDef))
         {
           damageInfo.rejected = true;
           if (!self.body.HasBuff(RoR2Content.Buffs.Immune))
-            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, 1f);
+            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.iframes);
           break; // Exit the loop if condition is met
         }
 
@@ -76,6 +82,30 @@ namespace Parry
       orig(self, damageInfo);
     }
 
+    private void CreateParryBuffs()
+    {
+      parryBuffDef = ScriptableObject.CreateInstance<BuffDef>();
+      parryBuffDef.name = "ParryBuffNux";
+      parryBuffDef.canStack = false;
+      parryBuffDef.isCooldown = false;
+      parryBuffDef.isDebuff = false;
+      parryBuffDef.buffColor = Color.cyan;
+      parryBuffDef.iconSprite = parryBuffIcon;
+      (parryBuffDef as UnityEngine.Object).name = parryBuffDef.name;
+
+      parryActivatedBuffDef = ScriptableObject.CreateInstance<BuffDef>();
+      parryActivatedBuffDef.name = "ParryActivatedBuffNux";
+      parryActivatedBuffDef.canStack = false;
+      parryActivatedBuffDef.isCooldown = false;
+      parryActivatedBuffDef.isDebuff = false;
+      parryActivatedBuffDef.buffColor = Color.cyan;
+      parryActivatedBuffDef.iconSprite = parryActivatedBuffIcon;
+      (parryActivatedBuffDef as UnityEngine.Object).name = parryActivatedBuffDef.name;
+
+      ContentAddition.AddBuffDef(parryBuffDef);
+      ContentAddition.AddBuffDef(parryActivatedBuffDef);
+    }
+
     private void CreateParrySkill()
     {
       parrySkillDef.skillName = "FocusedStrike";
@@ -84,7 +114,7 @@ namespace Parry
       parrySkillDef.skillDescriptionToken = "Ready your blade, release before an incoming strike to <style=cIsUtility>parry</style> enemy attacks for <style=cIsDamage>500%-1000% damage to all nearby enemies.</style>";
       parrySkillDef.icon = parryIcon;
 
-      parrySkillDef.activationState = new SerializableEntityStateType(typeof(FocusedStrike));
+      parrySkillDef.activationState = new SerializableEntityStateType(typeof(ParryHold));
       parrySkillDef.activationStateMachineName = "Body";
       parrySkillDef.interruptPriority = InterruptPriority.PrioritySkill;
 

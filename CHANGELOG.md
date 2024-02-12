@@ -1,5 +1,9 @@
 ## Changelog
 
+**1.2.0**
+
+- Networking. Refactored the skill so it can work in multiplayer. Thank you to Moffein for the help!
+
 **1.1.0**
 
 - Adds skill icon (Thank you GloomzyLion)
