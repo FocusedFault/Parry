@@ -25,7 +25,7 @@ namespace Parry
             {
                 hasReleased = true;
             }
-            if (hasReleased)
+            if (hasReleased)    //State transitions need to be locked behind authority.
             {
                 delayStopwatch += Time.fixedDeltaTime;
                 if (delayStopwatch > 0.1f)
