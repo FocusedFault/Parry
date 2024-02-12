@@ -21,6 +21,9 @@ namespace Parry
     private SkillDef parrySkillDef = ScriptableObject.CreateInstance<SkillDef>();
     private SkillDef uppercutSkillDef = Addressables.LoadAssetAsync<SkillDef>("RoR2/Base/Merc/MercBodyUppercut.asset").WaitForCompletion();
 
+    private static BodyIndex mercBodyIndex;
+
+
     public void Awake()
     {
 
@@ -29,11 +32,18 @@ namespace Parry
       ContentAddition.AddEntityState<FocusedStrike>(out _);
       CreateParrySkill();
       On.RoR2.HealthComponent.TakeDamage += AddParryDelay;
+
+      RoR2Application.onLoad += OnLoad;
+    }
+
+    private void OnLoad()
+    {
+      mercBodyIndex = BodyCatalog.FindBodyIndex("MercBody");
     }
 
     public void AddParryDelay(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
     {
-      if (self.body.name == "MercBody(Clone)" && self.body.inputBank.skill2.down && self.body.GetComponent<EntityStateMachine>().state.GetType() == typeof(FocusedStrike))
+      if (self.body.bodyIndex == mercBodyIndex && self.body.inputBank.skill2.down && self.body.GetComponent<EntityStateMachine>().state.GetType() == typeof(FocusedStrike))
       {
         EffectManager.SimpleImpactEffect(HealthComponent.AssetReferences.executeEffectPrefab, damageInfo.position, -damageInfo.force, true);
         StartCoroutine(ParryDelay(orig, self, damageInfo));
