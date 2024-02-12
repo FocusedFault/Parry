@@ -39,7 +39,7 @@ namespace Parry
       ContentAddition.AddEntityState<ParryStrike>(out _);
       CreateParryBuffs();
       CreateParrySkill();
-      On.RoR2.HealthComponent.TakeDamage += AddParryDelay;
+      On.RoR2.HealthComponent.TakeDamage += TakeDamageHook;
 
       RoR2Application.onLoad += OnLoad;
     }
@@ -49,20 +49,21 @@ namespace Parry
       mercBodyIndex = BodyCatalog.FindBodyIndex("MercBody");
     }
 
-    public void AddParryDelay(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
+    private void TakeDamageHook(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
     {
-      if (NetworkServer.active
-        && self.body.bodyIndex == mercBodyIndex
-        && self.body.HasBuff(parryBuffDef))
-      {
-        EffectManager.SimpleImpactEffect(HealthComponent.AssetReferences.executeEffectPrefab, damageInfo.position, -damageInfo.force, true);
-        StartCoroutine(ParryDelay(orig, self, damageInfo));
-      }
-      else
+        if (NetworkServer.active && self.body && self.body.bodyIndex == mercBodyIndex && self.body.HasBuff(parryBuffDef))
+        {
+            self.body.RemoveBuff(parryBuffDef);
+            if (!self.body.HasBuff(parryActivatedBuffDef)) self.body.AddBuff(parryActivatedBuffDef);
+
+            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
+            EffectManager.SimpleImpactEffect(HealthComponent.AssetReferences.executeEffectPrefab, damageInfo.position, -damageInfo.force, true);
+        }
+
         orig(self, damageInfo);
     }
 
-    private IEnumerator ParryDelay(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
+    /*private IEnumerator ParryDelay(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
     {
       float elapsedTime = 0f;
       while (elapsedTime < 0.75f)
@@ -71,7 +72,7 @@ namespace Parry
         {
           damageInfo.rejected = true;
           if (!self.body.HasBuff(RoR2Content.Buffs.Immune))
-            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.iframes);
+            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
           break; // Exit the loop if condition is met
         }
 
@@ -80,7 +81,7 @@ namespace Parry
       }
 
       orig(self, damageInfo);
-    }
+    }*/
 
     private void CreateParryBuffs()
     {
