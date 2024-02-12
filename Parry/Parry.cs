@@ -19,7 +19,6 @@ namespace Parry
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
     public static GameObject parryImpact = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/ImpactMercFocusedAssault.prefab").WaitForCompletion();
     private SkillDef parrySkillDef = ScriptableObject.CreateInstance<SkillDef>();
-    private SkillDef uppercutSkillDef = Addressables.LoadAssetAsync<SkillDef>("RoR2/Base/Merc/MercBodyUppercut.asset").WaitForCompletion();
 
     private static BodyIndex mercBodyIndex;
 
@@ -81,8 +80,8 @@ namespace Parry
       parrySkillDef.icon = parryIcon;
 
       parrySkillDef.activationState = new SerializableEntityStateType(typeof(FocusedStrike));
-      parrySkillDef.activationStateMachineName = uppercutSkillDef.activationStateMachineName;
-      parrySkillDef.interruptPriority = uppercutSkillDef.interruptPriority;
+      parrySkillDef.activationStateMachineName = "Body";
+      parrySkillDef.interruptPriority = InterruptPriority.PrioritySkill;
 
       parrySkillDef.baseMaxStock = 1;
       parrySkillDef.baseRechargeInterval = 5f;
@@ -91,15 +90,15 @@ namespace Parry
       parrySkillDef.requiredStock = 1;
       parrySkillDef.stockToConsume = 1;
 
-      parrySkillDef.dontAllowPastMaxStocks = uppercutSkillDef.dontAllowPastMaxStocks;
-      parrySkillDef.beginSkillCooldownOnSkillEnd = uppercutSkillDef.beginSkillCooldownOnSkillEnd;
-      parrySkillDef.canceledFromSprinting = uppercutSkillDef.canceledFromSprinting;
-      parrySkillDef.forceSprintDuringState = uppercutSkillDef.forceSprintDuringState;
-      parrySkillDef.fullRestockOnAssign = uppercutSkillDef.fullRestockOnAssign;
-      parrySkillDef.resetCooldownTimerOnUse = uppercutSkillDef.resetCooldownTimerOnUse;
-      parrySkillDef.isCombatSkill = uppercutSkillDef.isCombatSkill;
-      parrySkillDef.mustKeyPress = uppercutSkillDef.mustKeyPress;
-      parrySkillDef.cancelSprintingOnActivation = uppercutSkillDef.cancelSprintingOnActivation;
+      parrySkillDef.dontAllowPastMaxStocks = false;
+      parrySkillDef.beginSkillCooldownOnSkillEnd = false;
+      parrySkillDef.canceledFromSprinting = false;
+      parrySkillDef.forceSprintDuringState = false;
+      parrySkillDef.fullRestockOnAssign = true;
+      parrySkillDef.resetCooldownTimerOnUse = false;
+      parrySkillDef.isCombatSkill = true;
+      parrySkillDef.mustKeyPress = false;
+      parrySkillDef.cancelSprintingOnActivation = true;
 
       ContentAddition.AddSkillDef(parrySkillDef);
 
