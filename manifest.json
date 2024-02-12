@@ -1,0 +1,9 @@
+﻿{
+	"name": "Parry",
+	"version_number": "1.1.0",
+	"website_url": "",
+	"description": "Adds a parry skill to Mercenary",
+	"dependencies": [
+		"RiskofThunder-R2API_ContentManagement-1.0.4"
+	]
+}
