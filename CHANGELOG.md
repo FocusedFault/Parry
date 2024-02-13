@@ -2,7 +2,11 @@
 
 **1.2.0**
 
-- Networking. Refactored the skill so it can work in multiplayer. Thank you to Moffein for the help!
+- Big thanks to Moffein for this update
+- Reworked. Now works predictively instead of after taking damage
+- Networking. Refactored the skill so it can work in multiplayer
+- Adds new parry audio sounds (sekiro parry sounds)
+- Increases perfect parry damage 1000% -> 1500%
 
 **1.1.0**
 

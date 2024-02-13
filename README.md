@@ -1,6 +1,12 @@
 # Parry
 
-Adds Mercenary's parry skill from Risk of Rain Returns.
+Adds Mercenary's parry skill from Risk of Rain Returns. Multiplayer compatible.
 
-While in the parry stance, damage is delayed by 0.75 seconds and each instance of damage plays a guillotine effect, if the button is released within that timeframe, you turn immune for 1 second and get a "perfect" parry for 1000% damage that exposes enemies.
-If you miss you still do 500% damage and stun enemies for 1s. Damage is in a 13m radius around Mercenary, think of it as a small explosion. Yes it works on ALL instances of damage, just like RoRR. Have fun.
+Works like Risk of Rain Returns, go into a parry stance, if released right before an attack lands, you get a "perfect" parry that deals more damage and grants i-frames. Damage is dealt in a 13m sphere (explosion) around Merc.
+
+## Credits
+
+- GloomzyLion, for making the icon
+- Moffein, for networking and reworking to be closer to RoRR
+
+![Parrying Lunar Wisp](https://i.ibb.co/dpxHx8D/parrying.gif)

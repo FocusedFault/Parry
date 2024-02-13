@@ -10,10 +10,9 @@ namespace Parry
     {
         public static string enterSoundString = "";
 
-        public static NetworkSoundEventDef attackSoundDef;
-        public static NetworkSoundEventDef parrySoundDef;
+        public static NetworkSoundEventDef parrySoundDef = Parry.networkSoundEventDef;
 
-        public static float totalDuration = 0.6f; //Total duration of state, should be fixed.
+        public static float totalDuration = 0.35f; //Total duration of state, should be fixed.
         public static float attackDelay = 0.3f;	//Delay before the attack starts, parry active frames
         public static float invulnDuration = 1f;  //iframes to grant on successful parry
         public static float blastAttackDamageCoefficient = 5f;    //Damage coefficient for the attack.
@@ -87,13 +86,14 @@ namespace Parry
 
             if (parry)
             {
-                damageCoefficient *= 2f;
+                damageCoefficient *= 3f;
                 damageType |= DamageType.ApplyMercExpose;
                 if (parrySoundDef) EffectManager.SimpleSoundEffect(parrySoundDef.index, this.characterBody.corePosition, true);
             }
             else
             {
-                if (attackSoundDef) EffectManager.SimpleSoundEffect(attackSoundDef.index, this.characterBody.corePosition, true);
+                Util.PlaySound("Play_merc_m2_uppercut", this.gameObject);
+                Util.PlaySound(Evis.impactSoundString, this.gameObject);
             }
 
             //Scale attack damage based on whether or not the attack successfully landed.
@@ -101,20 +101,6 @@ namespace Parry
             EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.zero, false);
             EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.left, false);
             EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.right, false);
-            if (parry)
-            {
-                Util.PlaySound("Play_merc_utility_variant", this.gameObject);
-                Util.PlaySound("Play_merc_utility_variant", this.gameObject);
-                Util.PlaySound("Play_merc_utility_variant", this.gameObject);
-                Util.PlaySound("Play_merc_utility_variant", this.gameObject);
-                Util.PlaySound("Play_merc_utility_variant", this.gameObject);
-                Util.PlaySound("Play_merc_utility_variant", this.gameObject);
-            }
-            else
-            {
-                Util.PlaySound("Play_merc_m2_uppercut", this.gameObject);
-                Util.PlaySound(Evis.impactSoundString, this.gameObject);
-            }
 
             new BlastAttack()
             {

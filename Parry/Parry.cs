@@ -1,4 +1,3 @@
-using System.Collections;
 using BepInEx;
 using R2API;
 using RoR2;
@@ -11,7 +10,7 @@ using UnityEngine.Networking;
 
 namespace Parry
 {
-  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.1.0")]
+  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.2.0")]
 
   public class Parry : BaseUnityPlugin
   {
@@ -19,6 +18,7 @@ namespace Parry
     private Sprite parryIcon;
     private Sprite parryBuffIcon;
     private Sprite parryActivatedBuffIcon;
+    public static NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
     public static BuffDef parryBuffDef;
     public static BuffDef parryActivatedBuffDef;
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
@@ -39,6 +39,11 @@ namespace Parry
       ContentAddition.AddEntityState<ParryStrike>(out _);
       CreateParryBuffs();
       CreateParrySkill();
+
+      networkSoundEventDef.akId = AkSoundEngine.GetIDFromString("Play_nux_parry");
+      networkSoundEventDef.eventName = "Play_nux_parry";
+      ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
+
       On.RoR2.HealthComponent.TakeDamage += TakeDamageHook;
 
       RoR2Application.onLoad += OnLoad;
@@ -51,37 +56,17 @@ namespace Parry
 
     private void TakeDamageHook(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
     {
-        if (NetworkServer.active && self.body && self.body.bodyIndex == mercBodyIndex && self.body.HasBuff(parryBuffDef))
-        {
-            self.body.RemoveBuff(parryBuffDef);
-            if (!self.body.HasBuff(parryActivatedBuffDef)) self.body.AddBuff(parryActivatedBuffDef);
-
-            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
-            EffectManager.SimpleImpactEffect(HealthComponent.AssetReferences.executeEffectPrefab, damageInfo.position, -damageInfo.force, true);
-        }
-
-        orig(self, damageInfo);
-    }
-
-    /*private IEnumerator ParryDelay(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
-    {
-      float elapsedTime = 0f;
-      while (elapsedTime < 0.75f)
+      if (NetworkServer.active && self.body && self.body.bodyIndex == mercBodyIndex && self.body.HasBuff(parryBuffDef))
       {
-        if (self.body.HasBuff(parryActivatedBuffDef))
-        {
-          damageInfo.rejected = true;
-          if (!self.body.HasBuff(RoR2Content.Buffs.Immune))
-            self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
-          break; // Exit the loop if condition is met
-        }
+        self.body.RemoveBuff(parryBuffDef);
+        if (!self.body.HasBuff(parryActivatedBuffDef)) self.body.AddBuff(parryActivatedBuffDef);
 
-        elapsedTime += Time.deltaTime;
-        yield return null; // Yield null to wait for next frame
+        self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
       }
 
       orig(self, damageInfo);
-    }*/
+    }
+
 
     private void CreateParryBuffs()
     {
@@ -112,7 +97,7 @@ namespace Parry
       parrySkillDef.skillName = "FocusedStrike";
       (parrySkillDef as ScriptableObject).name = "FocusedStrike";
       parrySkillDef.skillNameToken = "Focused Strike";
-      parrySkillDef.skillDescriptionToken = "Ready your blade, release before an incoming strike to <style=cIsUtility>parry</style> enemy attacks for <style=cIsDamage>500%-1000% damage to all nearby enemies.</style>";
+      parrySkillDef.skillDescriptionToken = "Ready your blade, release before an incoming strike to <style=cIsUtility>parry</style> enemy attacks for <style=cIsDamage>500%-1500% damage to all nearby enemies.</style>";
       parrySkillDef.icon = parryIcon;
 
       parrySkillDef.activationState = new SerializableEntityStateType(typeof(ParryHold));

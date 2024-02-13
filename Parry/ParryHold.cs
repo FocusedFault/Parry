@@ -18,7 +18,7 @@ namespace Parry
             playedSound = false;
             minDuration = baseMinDuration / this.attackSpeedStat;
 
-            this.PlayCrossfade("FullBody, Override", "GroundLight2", "GroundLight.playbackRate", 99f, 0.05f);
+            this.PlayCrossfade("FullBody, Override", "GroundLight2", "GroundLight.playbackRate", 999f, 0.05f);
         }
 
 
