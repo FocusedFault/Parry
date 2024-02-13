@@ -1,6 +1,6 @@
 ﻿{
 	"name": "Parry",
-	"version_number": "1.2.0",
+	"version_number": "1.2.1",
 	"website_url": "https://github.com/FocusedFault/Parry",
 	"description": "Adds a parry skill to Mercenary. Multiplayer compatible.",
 	"dependencies": [

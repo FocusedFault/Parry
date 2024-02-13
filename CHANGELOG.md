@@ -1,5 +1,10 @@
 ## Changelog
 
+**1.2.1**
+
+- Reduces parry sound volume
+- Prevents parried attacks from applying effects
+
 **1.2.0**
 
 - Big thanks to Moffein for this update

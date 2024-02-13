@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 
 namespace Parry
 {
-  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.2.0")]
+  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.2.1")]
 
   public class Parry : BaseUnityPlugin
   {
@@ -62,6 +62,7 @@ namespace Parry
         if (!self.body.HasBuff(parryActivatedBuffDef)) self.body.AddBuff(parryActivatedBuffDef);
 
         self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
+        return;
       }
 
       orig(self, damageInfo);
