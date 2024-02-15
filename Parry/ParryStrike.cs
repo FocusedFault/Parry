@@ -8,9 +8,8 @@ namespace Parry
 {
     public class ParryStrike : BaseState
     {
-        public static string enterSoundString = "";
-
-        public static NetworkSoundEventDef parrySoundDef = Parry.networkSoundEventDef;
+        public static NetworkSoundEventDef parrySoundDef;
+        public static NetworkSoundEventDef evisSoundDef;
 
         public static float totalDuration = 0.35f; //Total duration of state, should be fixed.
         public static float attackDelay = 0.3f;	//Delay before the attack starts, parry active frames
@@ -18,11 +17,11 @@ namespace Parry
         public static float blastAttackDamageCoefficient = 5f;    //Damage coefficient for the attack.
 
         private bool hasFiredServer = false;	//Used to determine whether the attack was fired. If false during OnExit, force fire the attack.
+        private bool hasFiredClient = false;    //Used to determine whether clientside visuals have played
 
         public override void OnEnter()
         {
             base.OnEnter();
-            Util.PlaySound(enterSoundString, this.gameObject);
             if (NetworkServer.active)
             {
                 CleanBuffsServer();
@@ -33,9 +32,15 @@ namespace Parry
         public override void FixedUpdate()
         {
             base.FixedUpdate();
-            if (NetworkServer.active)
+
+            if (base.fixedAge >= attackDelay)
             {
-                if (!hasFiredServer && base.fixedAge >= attackDelay)
+                if (!hasFiredClient)
+                {
+                    DoAttackClient();
+                }
+
+                if (NetworkServer.active && !hasFiredServer)
                 {
                     DoAttackServer();
                 }
@@ -71,11 +76,17 @@ namespace Parry
             if (this.characterBody.HasBuff(Parry.parryBuffDef)) this.characterBody.RemoveBuff(Parry.parryBuffDef);
         }
 
+        private void DoAttackClient()
+        {
+            hasFiredClient = true;
+            this.PlayCrossfade("FullBody, Override", nameof(Uppercut), "Uppercut.playbackRate", 1f, totalDuration - attackDelay);
+            Util.PlaySound("Play_merc_m2_uppercut", base.gameObject);
+        }
+
         //Since everything about parrying is handled server-side, do this on the server.
         private void DoAttackServer()
         {
             if (!NetworkServer.active) return;
-            this.PlayCrossfade("FullBody, Override", nameof(Uppercut), "Uppercut.playbackRate", 1f, 0.1f);
             hasFiredServer = true;
             bool parry = this.characterBody.HasBuff(Parry.parryActivatedBuffDef);
 
@@ -90,19 +101,14 @@ namespace Parry
                 damageType |= DamageType.ApplyMercExpose;
                 if (parrySoundDef) EffectManager.SimpleSoundEffect(parrySoundDef.index, this.characterBody.corePosition, true);
             }
-            else
-            {
-                Util.PlaySound("Play_merc_m2_uppercut", this.gameObject);
-                Util.PlaySound(Evis.impactSoundString, this.gameObject);
-            }
 
             //Scale attack damage based on whether or not the attack successfully landed.
-            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.one, false);
-            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.zero, false);
-            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.left, false);
-            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.right, false);
+            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.one, true);
+            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.zero, true);
+            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.left, true);
+            EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.right, true);
 
-            new BlastAttack()
+            BlastAttack.Result result = new BlastAttack()
             {
                 impactEffect = EffectCatalog.FindEffectIndexFromPrefab(Evis.hitEffectPrefab),
                 attacker = this.gameObject,
@@ -116,6 +122,11 @@ namespace Parry
                 damageType = damageType,
                 attackerFiltering = AttackerFiltering.NeverHitSelf
             }.Fire();
+
+            if (result.hitCount > 0)
+            {
+                if (evisSoundDef) EffectManager.SimpleSoundEffect(evisSoundDef.index, this.characterBody.corePosition, true);
+            }
             //Once attack has been fired, there is no more need for the Parry buffs.
             CleanBuffsServer();
         }

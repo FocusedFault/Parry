@@ -18,7 +18,6 @@ namespace Parry
     private Sprite parryIcon;
     private Sprite parryBuffIcon;
     private Sprite parryActivatedBuffIcon;
-    public static NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
     public static BuffDef parryBuffDef;
     public static BuffDef parryActivatedBuffDef;
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
@@ -39,10 +38,9 @@ namespace Parry
       ContentAddition.AddEntityState<ParryStrike>(out _);
       CreateParryBuffs();
       CreateParrySkill();
-
-      networkSoundEventDef.akId = AkSoundEngine.GetIDFromString("Play_nux_parry");
-      networkSoundEventDef.eventName = "Play_nux_parry";
-      ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
+            
+      ParryStrike.parrySoundDef = CreateNetworkSoundEventDef("Play_nux_parry");
+      ParryStrike.evisSoundDef = CreateNetworkSoundEventDef("Play_merc_sword_impact");
 
       On.RoR2.HealthComponent.TakeDamage += TakeDamageHook;
 
@@ -131,6 +129,17 @@ namespace Parry
         skillDef = parrySkillDef,
         viewableNode = new ViewablesCatalog.Node(parrySkillDef.skillNameToken, false)
       };
+    }
+
+    public static NetworkSoundEventDef CreateNetworkSoundEventDef(string eventName)
+    {
+        NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
+        networkSoundEventDef.akId = AkSoundEngine.GetIDFromString(eventName);
+        networkSoundEventDef.eventName = eventName;
+
+        ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
+
+        return networkSoundEventDef;
     }
   }
 }
