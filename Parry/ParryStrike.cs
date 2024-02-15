@@ -145,7 +145,7 @@ namespace Parry
 
         private void CheckProjectileGrazeServer()
         {
-            if (!NetworkServer.active || !this.characterBody || !this.characterBody.HasBuff(Parry.parryBuffDef)) return;
+            if (!NetworkServer.active || projectileGrazeRadius <= 0f || !this.characterBody || !this.characterBody.HasBuff(Parry.parryBuffDef)) return;
 
             Collider[] array = Physics.OverlapSphere(this.characterBody.corePosition, ParryStrike.projectileGrazeRadius + this.characterBody.radius, LayerIndex.projectile.mask);
             for (int i = 0; i < array.Length; i++)
