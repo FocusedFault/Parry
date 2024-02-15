@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 
 namespace Parry
 {
-  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.2.1")]
+  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.3.0")]
 
   public class Parry : BaseUnityPlugin
   {
@@ -18,7 +18,6 @@ namespace Parry
     private Sprite parryIcon;
     private Sprite parryBuffIcon;
     private Sprite parryActivatedBuffIcon;
-    public static NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
     public static BuffDef parryBuffDef;
     public static BuffDef parryActivatedBuffDef;
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
@@ -39,10 +38,9 @@ namespace Parry
       ContentAddition.AddEntityState<ParryStrike>(out _);
       CreateParryBuffs();
       CreateParrySkill();
-
-      networkSoundEventDef.akId = AkSoundEngine.GetIDFromString("Play_nux_parry");
-      networkSoundEventDef.eventName = "Play_nux_parry";
-      ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
+            
+      ParryStrike.parrySoundDef = CreateNetworkSoundEventDef("Play_nux_parry");
+      ParryStrike.evisSoundDef = CreateNetworkSoundEventDef("Play_merc_sword_impact");
 
       On.RoR2.HealthComponent.TakeDamage += TakeDamageHook;
 
@@ -56,17 +54,23 @@ namespace Parry
 
     private void TakeDamageHook(On.RoR2.HealthComponent.orig_TakeDamage orig, HealthComponent self, DamageInfo damageInfo)
     {
-      if (NetworkServer.active && self.body && self.body.bodyIndex == mercBodyIndex && self.body.HasBuff(parryBuffDef))
+      if (NetworkServer.active && self.body.bodyIndex == mercBodyIndex && self.body.HasBuff(parryBuffDef) && damageInfo.damage > 0f)
       {
-        self.body.RemoveBuff(parryBuffDef);
-        if (!self.body.HasBuff(parryActivatedBuffDef)) self.body.AddBuff(parryActivatedBuffDef);
-
-        self.body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
+        HandleParryBuffsServer(self.body);
         return;
       }
 
       orig(self, damageInfo);
     }
+
+   public static void HandleParryBuffsServer(CharacterBody body)
+   {
+     if (body.HasBuff(parryBuffDef)) body.RemoveBuff(parryBuffDef);
+     if (!body.HasBuff(parryActivatedBuffDef)) body.AddBuff(parryActivatedBuffDef);
+
+     body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
+     return;
+   }
 
 
     private void CreateParryBuffs()
@@ -131,6 +135,17 @@ namespace Parry
         skillDef = parrySkillDef,
         viewableNode = new ViewablesCatalog.Node(parrySkillDef.skillNameToken, false)
       };
+    }
+
+    public static NetworkSoundEventDef CreateNetworkSoundEventDef(string eventName)
+    {
+        NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
+        networkSoundEventDef.akId = AkSoundEngine.GetIDFromString(eventName);
+        networkSoundEventDef.eventName = eventName;
+
+        ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
+
+        return networkSoundEventDef;
     }
   }
 }
