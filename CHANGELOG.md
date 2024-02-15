@@ -1,5 +1,13 @@
 ## Changelog
 
+**1.3.0**
+
+- Another update from Moffein <3
+- Adds SFX/VFX online
+- Adds "Graze" radius for projectiles that don't quite hit you directly
+- Adds deletion of projectiles (not stationary ones) within the radius
+- Adds a new "Fun Mode" in the config
+
 **1.2.1**
 
 - Reduces parry sound volume

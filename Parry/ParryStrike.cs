@@ -106,8 +106,16 @@ namespace Parry
 
             if (parry)
             {
-                DeleteProjectilesServer(this.characterBody.radius + 13f);
-                damageCoefficient *= 3f;
+                if (Parry.parryFunEnabled.Value)
+                {
+                    DeleteProjectilesServer(this.characterBody.radius + Parry.parryFunRadius.Value);
+                    damageCoefficient *= Parry.parryFunDamageMultiplier.Value;
+                }
+                else
+                {
+                    DeleteProjectilesServer(this.characterBody.radius + 13f);
+                    damageCoefficient *= 3f;
+                }
                 damageType |= DamageType.ApplyMercExpose;
                 if (parrySoundDef) EffectManager.SimpleSoundEffect(parrySoundDef.index, this.characterBody.corePosition, true);
             }
@@ -118,20 +126,41 @@ namespace Parry
             EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.left, true);
             EffectManager.SimpleImpactEffect(Evis.hitEffectPrefab, this.characterBody.corePosition, Vector3.right, true);
 
-            BlastAttack.Result result = new BlastAttack()
+            BlastAttack.Result result;
+            if (Parry.parryFunEnabled.Value)
             {
-                impactEffect = EffectCatalog.FindEffectIndexFromPrefab(Evis.hitEffectPrefab),
-                attacker = this.gameObject,
-                inflictor = this.gameObject,
-                teamIndex = TeamComponent.GetObjectTeam(this.gameObject),
-                baseDamage = this.damageStat * damageCoefficient,
-                baseForce = 250,
-                position = this.characterBody.corePosition,
-                radius = this.characterBody.radius + 13f,
-                falloffModel = BlastAttack.FalloffModel.None,
-                damageType = damageType,
-                attackerFiltering = AttackerFiltering.NeverHitSelf
-            }.Fire();
+                result = new BlastAttack()
+                {
+                    impactEffect = EffectCatalog.FindEffectIndexFromPrefab(Parry.parryFunImpact),
+                    attacker = this.gameObject,
+                    inflictor = this.gameObject,
+                    teamIndex = TeamComponent.GetObjectTeam(this.gameObject),
+                    baseDamage = this.damageStat * damageCoefficient,
+                    baseForce = 10000f,
+                    position = this.characterBody.corePosition,
+                    radius = this.characterBody.radius + Parry.parryFunRadius.Value,
+                    falloffModel = BlastAttack.FalloffModel.None,
+                    damageType = damageType,
+                    attackerFiltering = AttackerFiltering.NeverHitSelf
+                }.Fire();
+            }
+            else
+            {
+                result = new BlastAttack()
+                {
+                    impactEffect = EffectCatalog.FindEffectIndexFromPrefab(Evis.hitEffectPrefab),
+                    attacker = this.gameObject,
+                    inflictor = this.gameObject,
+                    teamIndex = TeamComponent.GetObjectTeam(this.gameObject),
+                    baseDamage = this.damageStat * damageCoefficient,
+                    baseForce = 250,
+                    position = this.characterBody.corePosition,
+                    radius = this.characterBody.radius + 13f,
+                    falloffModel = BlastAttack.FalloffModel.None,
+                    damageType = damageType,
+                    attackerFiltering = AttackerFiltering.NeverHitSelf
+                }.Fire();
+            }
 
             if (result.hitCount > 0)
             {

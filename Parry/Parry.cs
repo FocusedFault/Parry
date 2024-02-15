@@ -1,4 +1,5 @@
 using BepInEx;
+using BepInEx.Configuration;
 using R2API;
 using RoR2;
 using RoR2.Skills;
@@ -22,14 +23,24 @@ namespace Parry
     public static BuffDef parryActivatedBuffDef;
     private GameObject merc = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/MercBody.prefab").WaitForCompletion();
     public static GameObject parryImpact = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Merc/ImpactMercFocusedAssault.prefab").WaitForCompletion();
+    public static GameObject parryFunImpact = Addressables.LoadAssetAsync<GameObject>("RoR2/Base/Captain/CaptainAirstrikeAltImpact.prefab").WaitForCompletion();
 
     public static SkillDef parrySkillDef = ScriptableObject.CreateInstance<SkillDef>();
 
     private static BodyIndex mercBodyIndex;
+    public static ConfigEntry<float> parryFunDamageMultiplier;
+    public static ConfigEntry<float> parryFunRadius;
+    public static ConfigEntry<bool> parryFunEnabled;
 
+    private static ConfigFile ParryConfig { get; set; }
 
     public void Awake()
     {
+      ParryConfig = new ConfigFile(Paths.ConfigPath + "\\com.Nuxlar.Parry.cfg", true);
+      parryFunDamageMultiplier = ParryConfig.Bind<float>("General", "Fun Mode Damage Multiplier", 20f, "This number is multiplied by the base 500% damage, so 20 would be 10000% damage.");
+      parryFunRadius = ParryConfig.Bind<float>("General", "Fun Mode Damage Radius", 26f, "How large the retalitory strike radius is in fun mode.");
+      parryFunEnabled = ParryConfig.Bind<bool>("General", "Enable Fun Mode", false, "Parry but fun.");
+
       parryAssets = AssetBundle.LoadFromFile(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(this.Info.Location), "parrybundle.bundle"));
       parryIcon = parryAssets.LoadAsset<Sprite>("Assets/parryIconNux.png");
       parryBuffIcon = parryAssets.LoadAsset<Sprite>("Assets/parryBuffIconNux.png");
@@ -38,7 +49,7 @@ namespace Parry
       ContentAddition.AddEntityState<ParryStrike>(out _);
       CreateParryBuffs();
       CreateParrySkill();
-            
+
       ParryStrike.parrySoundDef = CreateNetworkSoundEventDef("Play_nux_parry");
       ParryStrike.evisSoundDef = CreateNetworkSoundEventDef("Play_merc_sword_impact");
 
@@ -63,14 +74,14 @@ namespace Parry
       orig(self, damageInfo);
     }
 
-   public static void HandleParryBuffsServer(CharacterBody body)
-   {
-     if (body.HasBuff(parryBuffDef)) body.RemoveBuff(parryBuffDef);
-     if (!body.HasBuff(parryActivatedBuffDef)) body.AddBuff(parryActivatedBuffDef);
+    public static void HandleParryBuffsServer(CharacterBody body)
+    {
+      if (body.HasBuff(parryBuffDef)) body.RemoveBuff(parryBuffDef);
+      if (!body.HasBuff(parryActivatedBuffDef)) body.AddBuff(parryActivatedBuffDef);
 
-     body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
-     return;
-   }
+      body.AddTimedBuff(RoR2Content.Buffs.Immune, ParryStrike.invulnDuration);
+      return;
+    }
 
 
     private void CreateParryBuffs()
@@ -139,13 +150,13 @@ namespace Parry
 
     public static NetworkSoundEventDef CreateNetworkSoundEventDef(string eventName)
     {
-        NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
-        networkSoundEventDef.akId = AkSoundEngine.GetIDFromString(eventName);
-        networkSoundEventDef.eventName = eventName;
+      NetworkSoundEventDef networkSoundEventDef = ScriptableObject.CreateInstance<NetworkSoundEventDef>();
+      networkSoundEventDef.akId = AkSoundEngine.GetIDFromString(eventName);
+      networkSoundEventDef.eventName = eventName;
 
-        ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
+      ContentAddition.AddNetworkSoundEventDef(networkSoundEventDef);
 
-        return networkSoundEventDef;
+      return networkSoundEventDef;
     }
   }
 }
