@@ -3,6 +3,10 @@ using EntityStates;
 using EntityStates.Merc;
 using UnityEngine;
 using UnityEngine.Networking;
+using System;
+using RoR2.Projectile;
+using System.Collections.Generic;
+using HG;
 
 namespace Parry
 {
@@ -15,6 +19,7 @@ namespace Parry
         public static float attackDelay = 0.3f;	//Delay before the attack starts, parry active frames
         public static float invulnDuration = 1f;  //iframes to grant on successful parry
         public static float blastAttackDamageCoefficient = 5f;    //Damage coefficient for the attack.
+        public static float projectileGrazeRadius = 3f; //Radius that counts as a projectile graze to trigger parry.
 
         private bool hasFiredServer = false;	//Used to determine whether the attack was fired. If false during OnExit, force fire the attack.
         private bool hasFiredClient = false;    //Used to determine whether clientside visuals have played
@@ -44,6 +49,10 @@ namespace Parry
                 {
                     DoAttackServer();
                 }
+            }
+            else
+            {
+                CheckProjectileGrazeServer();
             }
 
             //Keep in mind that FixedAge on client can differ from FixedAge on server.
@@ -86,7 +95,7 @@ namespace Parry
         //Since everything about parrying is handled server-side, do this on the server.
         private void DoAttackServer()
         {
-            if (!NetworkServer.active) return;
+            if (!NetworkServer.active || !this.characterBody) return;
             hasFiredServer = true;
             bool parry = this.characterBody.HasBuff(Parry.parryActivatedBuffDef);
 
@@ -97,6 +106,7 @@ namespace Parry
 
             if (parry)
             {
+                DeleteProjectilesServer(this.characterBody.radius + 13f);
                 damageCoefficient *= 3f;
                 damageType |= DamageType.ApplyMercExpose;
                 if (parrySoundDef) EffectManager.SimpleSoundEffect(parrySoundDef.index, this.characterBody.corePosition, true);
@@ -127,8 +137,78 @@ namespace Parry
             {
                 if (evisSoundDef) EffectManager.SimpleSoundEffect(evisSoundDef.index, this.characterBody.corePosition, true);
             }
+
+
             //Once attack has been fired, there is no more need for the Parry buffs.
             CleanBuffsServer();
+        }
+
+        private void CheckProjectileGrazeServer()
+        {
+            if (!NetworkServer.active || !this.characterBody || !this.characterBody.HasBuff(Parry.parryBuffDef)) return;
+
+            Collider[] array = Physics.OverlapSphere(this.characterBody.corePosition, ParryStrike.projectileGrazeRadius + this.characterBody.radius, LayerIndex.projectile.mask);
+            for (int i = 0; i < array.Length; i++)
+            {
+                ProjectileController pc = array[i].GetComponentInParent<ProjectileController>();
+                if (pc && !pc.cannotBeDeleted && pc.owner != base.gameObject && !(pc.teamFilter && pc.teamFilter.teamIndex == base.GetTeam()))
+                {
+                    //Prevent stationary grounded "projectiles" from counting
+                    bool cannotDelete = false;
+                    ProjectileSimple ps = pc.gameObject.GetComponent<ProjectileSimple>();
+                    ProjectileCharacterController pcc = pc.gameObject.GetComponent<ProjectileCharacterController>();
+
+                    if ((!ps || (ps && ps.desiredForwardSpeed == 0f)) && !pcc)
+                    {
+                        cannotDelete = true;
+                    }
+
+                    if (!cannotDelete)
+                    {
+                        Parry.HandleParryBuffsServer(this.characterBody);
+                        return;
+                    }
+                }
+            }
+        }
+
+        //NetworkServer.active and Characterbody are already checked in DoAttackServer which calls this
+        private void DeleteProjectilesServer(float radius)
+        {
+            List<ProjectileController> projectileControllers = new List<ProjectileController>();
+
+            Collider[] array = Physics.OverlapSphere(this.characterBody.corePosition, radius, LayerIndex.projectile.mask);
+            for (int i = 0; i < array.Length; i++)
+            {
+                ProjectileController pc = array[i].GetComponentInParent<ProjectileController>();
+                if (pc && !pc.cannotBeDeleted && pc.owner != base.gameObject && !(pc.teamFilter && pc.teamFilter.teamIndex == base.GetTeam()))
+                {
+                    //Prevent stationary grounded "projectiles" from being deleted
+                    bool cannotDelete = false;
+                    ProjectileSimple ps = pc.gameObject.GetComponent<ProjectileSimple>();
+                    ProjectileCharacterController pcc = pc.gameObject.GetComponent<ProjectileCharacterController>();
+
+                    if ((!ps || (ps && ps.desiredForwardSpeed == 0f)) && !pcc)
+                    {
+                        cannotDelete = true;
+                    }
+
+                    if (!cannotDelete && !projectileControllers.Contains(pc))
+                    {
+                        projectileControllers.Add(pc);
+                    }
+                }
+            }
+
+            int projectilesDeleted = projectileControllers.Count;
+            for (int i = 0; i < projectilesDeleted; i++)
+            {
+                GameObject toDelete = projectileControllers[i].gameObject;
+                if (toDelete)
+                {
+                    EntityState.Destroy(toDelete);
+                }
+            }
         }
     }
 }
