@@ -103,6 +103,7 @@ namespace Parry
             DamageType damageType = DamageType.Stun1s;
 
             float damageCoefficient = blastAttackDamageCoefficient;
+            float radius = 13f;
 
             if (parry)
             {
@@ -115,6 +116,7 @@ namespace Parry
                 {
                     DeleteProjectilesServer(this.characterBody.radius + 13f);
                     damageCoefficient *= 3f;
+                    radius = 24f;
                 }
                 damageType |= DamageType.ApplyMercExpose;
                 if (parrySoundDef) EffectManager.SimpleSoundEffect(parrySoundDef.index, this.characterBody.corePosition, true);
@@ -155,7 +157,7 @@ namespace Parry
                     baseDamage = this.damageStat * damageCoefficient,
                     baseForce = 250,
                     position = this.characterBody.corePosition,
-                    radius = this.characterBody.radius + 13f,
+                    radius = this.characterBody.radius + radius,
                     falloffModel = BlastAttack.FalloffModel.None,
                     damageType = damageType,
                     attackerFiltering = AttackerFiltering.NeverHitSelf

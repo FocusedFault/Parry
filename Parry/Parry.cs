@@ -11,7 +11,7 @@ using UnityEngine.Networking;
 
 namespace Parry
 {
-  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.3.0")]
+  [BepInPlugin("com.Nuxlar.Parry", "Parry", "1.3.1")]
 
   public class Parry : BaseUnityPlugin
   {

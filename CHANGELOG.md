@@ -1,5 +1,10 @@
 ## Changelog
 
+**1.3.1**
+
+- Updated for SOTS
+- Increased retaliation radius by 11m on perfect parry
+
 **1.3.0**
 
 - Another update from Moffein <3
